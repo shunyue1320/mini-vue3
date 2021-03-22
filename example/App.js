@@ -2,7 +2,7 @@ import { h } from "../lib/mini-vue.esm.js";
 import HelloWorld from "./components/HelloWorld.js";
 
 export default {
-    name:"App",
+  name:"App",
   setup() {},
 
   render() {
