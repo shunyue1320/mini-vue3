@@ -1,84 +1,140 @@
-import { ShapeFlags } from "../shared"
-import { createComponentInstance } from "./component"
-import { hostCreateElement, hostSetElementText, hostPatchProp, hostInsert } from "./render-api"
-import { h } from "./h"
+import { ShapeFlags } from "../shared";
+import { createComponentInstance } from "./component";
+import {
+  hostCreateElement,
+  hostSetElementText,
+  hostPatchProp,
+  hostInsert,
+} from "./render-api";
+import { effect } from "@vue/reactivity";
+import { h } from "./h";
 
 export const render = (vnode, container) => {
-  console.log("调用 patch")
-  patch(null, vnode, container)
-}
+  console.log("调用 patch");
+  patch(null, vnode, container);
+};
 
-// n1: oldVnode n2:newVnode
-function patch(n1, n2, container) {
-  const { type, shapeFlag } = n2
+function patch(n1, n2, container = null) {
+  // 基于 n2 的类型来判断
+  // 因为 n2 是新的 vnode
+  const { type, shapeFlag } = n2;
   switch (type) {
     case "text":
       // todo
       break;
+    // 其中还有几个类型比如： static fragment comment
+
     default:
-      if (shapeFlag & ShapeFlags.ELEMENT) { // 按位包含运算 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_AND_assignment
-        console.log("处理 element")
-        processElement(n1, n2, container)
+      // 这里就基于 shapeFlag 来处理
+      if (shapeFlag & ShapeFlags.ELEMENT) {
+        console.log("处理 element");
+        processElement(n1, n2, container);
       } else if (shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
         console.log("处理 component");
-        processComponent(n1, n2, container)
+        processComponent(n1, n2, container);
       }
   }
 }
 
 function processElement(n1, n2, container) {
   if (!n1) {
-    mountElement(n2, container)
+    mountElement(n2, container);
   } else {
     // todo
-    // updateElement()
+    updateElement(n1, n2, container);
+  }
+}
+
+function updateElement(n1, n2, container) {
+  // 应该更新 element
+  console.log("应该更新 element");
+  console.log("旧的 vnode", n1);
+  console.log("新的 vnode", n2);
+
+  // 需要把 el 挂载到新的 vnode 
+  const el = (n2.el = n1.el)
+  // 比对 children
+  patchChildren(n1, n2, el);
+}
+
+function patchChildren(n1, n2, container) {
+
+
+
+  const { children: c1 } = n1;
+  const { shapeFlag, children: c2 } = n2;
+
+  // 如果 n2 的 children 是 text 类型的话
+  // 就看看和之前的 n1 的 children 是不是一样的
+  // 如果不一样的话直接重新设置一下 text 即可
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (c2 !== c1) {
+      console.log("类型为 text_children, 当前需要更新");
+      hostSetElementText(container, c2 as string);
+    }
   }
 }
 
 function mountElement(vnode, container) {
-  const { shapeFlag, props } = vnode
-  // 1. 创建 element 基于可扩展的渲染 api
-  const el = (vnode.el = hostCreateElement(vnode.type))
+  const { shapeFlag, props } = vnode;
+  // 1. 先创建 element
+  // 基于可扩展的渲染 api
+  const el = (vnode.el = hostCreateElement(vnode.type));
 
-  // 2. 创建单子组件或多子组件
+  // 支持单子组件和多子组件的创建
   if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-    console.log(`处理文本:${vnode.children}`)
-    hostSetElementText(el, vnode.children)
+    // 举个栗子
+    // render(){
+    //     return h("div",{},"test")
+    // }
+    // 这里 children 就是 test ，只需要渲染一下就完事了
+    console.log(`处理文本:${vnode.children}`);
+    hostSetElementText(el, vnode.children);
   } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-    // children为数组，内部需要依次调用 patch 递归来处理
-    mountChildren(vnode.children, el)
+    // 举个栗子
+    // render(){
+    // Hello 是个 component
+    //     return h("div",{},[h("p"),h(Hello)])
+    // }
+    // 这里 children 就是个数组了，就需要依次调用 patch 递归来处理
+    mountChildren(vnode.children, el);
   }
 
-  // 3. 处理 props
+  // 处理 props
   if (props) {
     for (const key in props) {
-      // 需要过滤掉vue自身用的key: 如 beforeMount、mounted
-      const nextVal = props[key]
-      hostPatchProp(el, key, null, nextVal)
+      // todo
+      // 需要过滤掉vue自身用的key
+      // 比如生命周期相关的 key: beforeMount、mounted
+      const nextVal = props[key];
+      hostPatchProp(el, key, null, nextVal);
     }
   }
 
   // todo
   // 触发 beforeMount() 钩子
-  console.log("vnodeHook  -> onVnodeBeforeMount")
-  console.log("DirectiveHook  -> beforeMount")
-  console.log("transition  -> beforeEnter")
+  console.log("vnodeHook  -> onVnodeBeforeMount");
+  console.log("DirectiveHook  -> beforeMount");
+  console.log("transition  -> beforeEnter");
 
-  // 4. 插入
-  hostInsert(el, container)
+  // 插入
+  hostInsert(el, container);
 
   // todo
   // 触发 mounted() 钩子
-  console.log("vnodeHook  -> onVnodeMounted")
-  console.log("DirectiveHook  -> mounted")
-  console.log("transition  -> enter")
+  console.log("vnodeHook  -> onVnodeMounted");
+  console.log("DirectiveHook  -> mounted");
+  console.log("transition  -> enter");
 }
 
 function mountChildren(children, container) {
-  children.forEach(VNodeChild => {
-    // 处理 vnodeChild 不是 vnode 的情况
-    patch(null, VNodeChild, container)
-  })
+  children.forEach((VNodeChild) => {
+    // todo
+    // 这里应该需要处理一下 vnodeChild
+    // 因为有可能不是 vnode 类型
+    console.log("mountChildren:", VNodeChild);
+    patch(null, VNodeChild, container);
+  });
 }
 
 function processComponent(n1, n2, container) {
@@ -118,7 +174,6 @@ function setupComponent(instance) {
   setupStatefulComponent(instance);
 }
 
-
 function initProps() {
   // todo
   console.log("initProps");
@@ -141,7 +196,6 @@ function setupStatefulComponent(instance) {
   // 3. 处理 setupResult
   handleSetupResult(instance, setupResult);
 }
-
 
 function handleSetupResult(instance, setupResult) {
   // setup 返回值不一样的话，会有不同的处理
@@ -179,42 +233,65 @@ function finishComponentSetup(instance) {
   // applyOptions()
 }
 
-
 function applyOptions() {
   // 兼容 vue2.x
   // todo
 }
 
 function setupRenderEffect(instance, container) {
-  // 源码里面是直接调用了 reactivity
-  // 因为这次只处理初始化逻辑
-  // 所以暂时用不到
-  // 后面这里是作为 update 的主要逻辑
-
   // 调用 render
   // 应该传入 ctx 也就是 proxy
   // ctx 可以选择暴露给用户的 api
   // 源代码里面是调用的 renderComponentRoot 函数
   // 这里为了简化直接调用 render
-  console.log("调用 render,获取 subTree");
-  const subTree = instance.render(instance.proxy);
-  console.log("subTree", subTree);
+  instance.update = effect(function componentEffect() {
+    if (!instance.isMounted) {
+      // 组件初始化的时候会执行这里
+      // 为什么要在这里调用 render 函数呢
+      // 是因为在 effect 内调用 render 才能触发依赖收集
+      // 等到后面响应式的值变更后会再次触发这个函数
+      console.log("调用 render,获取 subTree");
+      const subTree = (instance.subTree = instance.render(instance.proxy));
+      console.log("subTree", subTree);
 
-  // todo
-  console.log(`${instance.type.name}:触发 beforeMount hook`);
-  console.log(`${instance.type.name}:触发 onVnodeBeforeMount hook`);
+      // todo
+      console.log(`${instance.type.name}:触发 beforeMount hook`);
+      console.log(`${instance.type.name}:触发 onVnodeBeforeMount hook`);
 
-  // 这里基于 subTree 再次调用 patch
-  // 基于 render 返回的 vnode ，再次进行渲染
-  // 这里我把这个行为隐喻成开箱
-  // 一个组件就是一个箱子
-  // 里面有可能是 element （也就是可以直接渲染的）
-  // 也有可能还是 component
-  // 这里就是递归的开箱
-  // 而 subTree 就是当前的这个箱子（组件）装的东西
-  // 箱子（组件）只是个概念，它实际是不需要渲染的
-  // 要渲染的是箱子里面的 subTree
-  patch(null, subTree, container);
+      // 这里基于 subTree 再次调用 patch
+      // 基于 render 返回的 vnode ，再次进行渲染
+      // 这里我把这个行为隐喻成开箱
+      // 一个组件就是一个箱子
+      // 里面有可能是 element （也就是可以直接渲染的）
+      // 也有可能还是 component
+      // 这里就是递归的开箱
+      // 而 subTree 就是当前的这个箱子（组件）装的东西
+      // 箱子（组件）只是个概念，它实际是不需要渲染的
+      // 要渲染的是箱子里面的 subTree
+      patch(null, subTree, container);
 
-  console.log(`${instance.type.name}:触发 mounted hook`);
+      console.log(`${instance.type.name}:触发 mounted hook`);
+      instance.isMounted = true;
+    } else {
+      // 响应式的值变更后会从这里执行逻辑
+      // 主要就是拿到新的 vnode ，然后和之前的 vnode 进行对比
+      console.log("调用更新逻辑");
+      // 拿到最新的 subTree
+      const nextTree = instance.render(instance.proxy);
+      // 替换之前的 subTree
+      const prevTree = instance.subTree;
+      instance.subTree = nextTree;
+
+      // 触发 beforeUpdated hook
+      console.log("beforeUpdated hook");
+      console.log("onVnodeBeforeUpdate hook");
+
+      // 用旧的 vnode 和新的 vnode 交给 patch 来处理
+      patch(prevTree, nextTree, prevTree.el);
+
+      // 触发 updated hook
+      console.log("updated hook");
+      console.log("onVnodeUpdated hook");
+    }
+  });
 }
