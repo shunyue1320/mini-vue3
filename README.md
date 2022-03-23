@@ -4,7 +4,7 @@
 |--|--|
 |execa	                      | 开启子进程 |
 |rollup	                      | 打包工具 |
-|esbuild	                    | 开发环境js打包插件 |
+|esbuild	                    | 开发环境ts打包插件 |
 |minimist	                    | 命令行参数解析 |
 |typescript	                  | 在项目中支持Typescript |
 |@rollup/plugin-json	        | 支持引入json |

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 用官方的 -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <!-- 用自己的 -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    // reactive 深度监听 ｜ shallowReactive 浅监听 ｜ readonly 只读 ｜ shallowReadonly 浅只读
+    const { effect, reactive } = VueReactivity
+    const state = reactive({ name: '大头', age: 13, father: { name: '小头', age: 40 } })
+    console.log("state = ", state.father )
+
+    effect(() => {
+      app.innerHTML = `姓名-年龄 【${state.name}-${state.age}】【${state.father.name}-${state.father.age}】`
+    })
+
+    setInterval(() => {
+      state.age = Math.floor(Math.random() * 10)
+      state.father.age = Math.floor(Math.random() * 10)
+    }, 3000)
+  </script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node scripts/dev.js reactivity -f global"
   },
   "repository": {
     "type": "git",
@@ -17,9 +17,6 @@
     "url": "https://github.com/shunyue1320/mini-vue3/issues"
   },
   "homepage": "https://github.com/shunyue1320/mini-vue3#readme",
-  "dependencies": {
-    "vue": "^3.2.31"
-  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.0.2",
     "@rollup/plugin-json": "^4.1.0",
@@ -30,5 +27,8 @@
     "rollup": "^2.70.1",
     "rollup-plugin-typescript2": "^0.31.2",
     "typescript": "^4.6.2"
+  },
+  "dependencies": {
+    "vue": "^3.2.31"
   }
 }
