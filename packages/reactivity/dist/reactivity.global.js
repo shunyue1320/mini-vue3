@@ -20,6 +20,7 @@ var VueReactivity = (() => {
   // packages/reactivity/src/index.js
   var src_exports = {};
   __export(src_exports, {
+    computed: () => computed,
     effect: () => effect,
     reactive: () => reactive
   });
@@ -118,6 +119,9 @@ var VueReactivity = (() => {
   var isObject = (val) => {
     return val !== null && typeof val === "object";
   };
+  var isFunction = (value) => {
+    return typeof value === "function";
+  };
   var isArray = Array.isArray;
 
   // packages/reactivity/src/baseHandlers.ts
@@ -159,6 +163,48 @@ var VueReactivity = (() => {
     const proxy = new Proxy(target, mutableHandlers);
     reactiveMap.set(target, proxy);
     return proxy;
+  }
+
+  // packages/reactivity/src/computed.ts
+  var ComputedRefImpl = class {
+    constructor(getter, _setter) {
+      this._setter = _setter;
+      this.dep = /* @__PURE__ */ new Set();
+      this.__v_isRef = true;
+      this._dirty = true;
+      this.effect = new ReactiveEffect(getter, () => {
+        if (!this._dirty) {
+          this._dirty = true;
+          triggerEffects(this.dep);
+        }
+      });
+    }
+    get value() {
+      trackEffects(this.dep);
+      if (this._dirty) {
+        this._dirty = false;
+        this._value = this.effect.run();
+      }
+      return this._value;
+    }
+    set value(newValue) {
+      this._setter(newValue);
+    }
+  };
+  function computed(getterOrOptions) {
+    let getter;
+    let setter;
+    const onlyGetter = isFunction(getterOrOptions);
+    if (onlyGetter) {
+      getter = getterOrOptions;
+      setter = () => {
+        console.warn("Write operation failed: computed value is readonly");
+      };
+    } else {
+      getter = getterOrOptions.get;
+      setter = getterOrOptions.set;
+    }
+    return new ComputedRefImpl(getter, setter);
   }
   return __toCommonJS(src_exports);
 })();

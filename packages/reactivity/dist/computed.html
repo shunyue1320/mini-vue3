@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 用官方的 -->
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <!-- 用自己的 -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    // reactive 深度监听 ｜ shallowReactive 浅监听 ｜ readonly 只读 ｜ shallowReadonly 浅只读
+    const { effect, reactive, computed } = VueReactivity
+    const state = reactive({ name: '大头', age: 13, father: { name: '小头', age: 40 } })
+    
+    const nameAndAge = computed(() => {
+      return state.name + state.age
+    })
+
+    effect(() => {
+      app.innerHTML = nameAndAge.value
+    })
+
+    setInterval(() => {
+      state.name = 'xiaotou'
+    }, 3000)
+  </script>
+</body>
+
+</html>
