@@ -24,12 +24,12 @@ class ComputedRefImpl<T> {
     this.effect = new ReactiveEffect(getter, () => {
       if(!this._dirty){
         this._dirty = true
-        triggerEffects(this.dep)
+        triggerEffects(this.dep) // 发布订阅
       }
     })
   }
   get value() {
-    trackEffects(this.dep) // 添加当前 ReactiveEffect
+    trackEffects(this.dep) // effect 依赖收集
     if(this._dirty){ // 说明这个值是脏的
       this._dirty = false
       this._value = this.effect.run()

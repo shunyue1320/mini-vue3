@@ -18,7 +18,7 @@
     // reactive 深度监听 ｜ shallowReactive 浅监听 ｜ readonly 只读 ｜ shallowReadonly 浅只读
     const { effect, reactive, computed } = VueReactivity
     const state = reactive({ name: '大头', age: 13, father: { name: '小头', age: 40 } })
-    
+
     const nameAndAge = computed(() => {
       return state.name + state.age
     })

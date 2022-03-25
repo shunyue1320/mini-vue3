@@ -16,7 +16,7 @@ export const mutableHandlers: ProxyHandler<object> = {
     // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Reflect/get
     let res = Reflect.get(target, key, receiver)
 
-    // 懒代理，取值在深度代理, 性能好
+    // 懒代理，取值在深度代理, 性能好 （obj1.obj2.a 当取值时obj2返回的值是对象，则返回这个对象的代理对象，从而实现深度代理）
     if (isObject(res)) {
       return reactive(res)
     }
