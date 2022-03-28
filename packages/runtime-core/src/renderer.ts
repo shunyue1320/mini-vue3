@@ -15,14 +15,52 @@ export function createRenderer(renderOptions) {
     patchProp: hostPatchProp
   } = renderOptions
 
-
-
-  const patch = (n1, n2, container, anchor = null) => {
-    // TODO
+  const processText = (n1, n2, container) => {
+    if (n1 === null) {
+      hostInsert((n2.el = hostCreateText(n2.children)), container)
+    } else {
+      // 文本仅内容变化，则复用老的节点
+      const el = (n2.el = n1.el)
+      if (n1.children !== n2.children) {
+        hostSetText(el, n2.children)
+      }
+    }
   }
 
-  const unmount = (vnode) => {
-    // TODO
+  const processElement = (n1, n2, container, anchor) => {
+    if (n1 === null) {
+      // TODO 挂载
+    } else {
+      // TODO diff
+    }
+  }
+
+  const patch = (n1, n2, container, anchor = null) => {
+    if (n1 === n2) {
+      return
+    }
+    // 判断两个元素不相同，不相同卸载 n1 再添加 n2
+    if (n1 && !isSameVnode(n1, n2)) {
+      unmount(n1)
+      n1 = null
+    }
+    const { type, shapeFlag } = n2
+    switch (type) {
+      case Text:
+        // 处理文本
+        processText(n1, n2, container)
+        break
+      default:
+        // 处理元素
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container, anchor)
+        }
+        break
+    }
+  }
+
+  const unmount = vnode => {
+    hostRemove(vnode.el)
   }
 
   const render = (vnode, container) => {
