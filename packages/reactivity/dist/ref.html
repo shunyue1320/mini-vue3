@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- 用官方的 -->
+  <!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+  <!-- 用自己的 -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    // reactive 深度监听 ｜ shallowReactive 浅监听 ｜ readonly 只读 ｜ shallowReadonly 浅只读
+    // const { effect, reactive, watch } = Vue
+    const { effect, reactive, ref, toRefs, toRef, proxyRefs } = VueReactivity
+    const state = reactive({ name: '大头', age: 13, father: { name: '小头', age: 40 } })
+
+    const name2 = ref('name2')
+    const age2 = ref('age2')
+    
+    // const school = proxyRefs({ name2, age2, add: 123 })
+    // const { name, age } = toRefs(school)
+
+
+    const state3 = { name3: 'name3', age3: 'age3' }
+    const name3 = toRef(state3, 'name3')
+    const age3 = toRef(state3, 'age3')
+
+
+    effect(() => {
+      app.innerHTML = `${name2.value} - ${age2.value}`
+    });
+
+    setTimeout(() => {
+      name2.value = 'name1';
+    }, 1000)
+
+  </script>
+</body>
+
+</html>
