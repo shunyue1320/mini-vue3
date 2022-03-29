@@ -15,6 +15,42 @@ export function createRenderer(renderOptions) {
     patchProp: hostPatchProp
   } = renderOptions
 
+  const normalize = (children, i) => {
+    if (isString(children[i])) {
+      let vnode = createVnode(Text, null, children[i])
+      children[i] = vnode
+    }
+    return children[i]
+  }
+
+  const mountChildren = (children, container) => {
+    for (let i = 0; i < children.length; i++) {
+      const child = normalize(children, i)
+      patch(null, child, container)
+    }
+  }
+
+  const mountElement = (vnode, container, anchor) => {
+    let { type, props, children, shapeFlag } = vnode
+    // 将真实元素挂载到这个虚拟节点上，后续用于复用节点和更新
+    let el = (vnode.el = hostCreateElement(type))
+    // 标签属性
+    if (props) {
+      for (let key in props) {
+        hostPatchProp(el, key, null, props[key])
+      }
+    }
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // 文本
+      hostSetElementText(el, children)
+    } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // 数组
+      mountChildren(children, el)
+    }
+    // 虚拟节点插入 app
+    hostInsert(el, container, anchor)
+  }
+
   const processText = (n1, n2, container) => {
     if (n1 === null) {
       hostInsert((n2.el = hostCreateText(n2.children)), container)
@@ -27,11 +63,87 @@ export function createRenderer(renderOptions) {
     }
   }
 
+  const patchProps = (oldProps, newProps, el) => {
+    for (const key in newProps) {
+      // 新的里面有，直接用新的盖掉
+      hostPatchProp(el, key, oldProps[key], newProps[key])
+    }
+    for (const key in oldProps) {
+      // 老的里面有新的没有，则删除
+      if (newProps[key] == null) {
+        hostPatchProp(el, key, oldProps[key], undefined)
+      }
+    }
+  }
+
+  const unmountChildren = children => {
+    for (let i = 0; i < children.length; i++) {
+      unmount(children[i])
+    }
+  }
+
+  // 核心 diff 流程
+  const patchKeyedChildren = (c1, c2, el) => {
+    // TODO
+  }
+
+  // 比较新旧 vnode
+  const patchChildren = (n1, n2, el) => {
+    // 比较两个虚拟节点的儿子的差异 ， el就是当前的父节点
+    const c1 = n1.children // 旧的
+    const c2 = n2.children // 新的
+    const prevShapeFlag = n1.shapeFlag
+    const shapeFlag = n2.shapeFlag
+
+    // 新的 vnode 是文本
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // 删除所有子节点
+      unmountChildren(c1)
+      // 文本	!== 文本
+      if (c1 !== c2) {
+        hostSetElementText(el, c2)
+      }
+    } else {
+      // 旧的 vnode 是数组
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // 就的 vnode 是数组
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // 核心 diff 流程 （比较新旧 vnode）
+          patchKeyedChildren(c1, c2, el)
+        } else {
+          // 新的 vnode 不是数组
+          unmountChildren(c1)
+        }
+      } else {
+        // 旧的 vnode 是文本
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+          hostSetElementText(el, '') // 清空文本，进行挂载
+        }
+        // 新的 vnode 是数组
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          mountChildren(c2, el) // 直接挂载
+        }
+      }
+    }
+  }
+
+  // 先复用节点、在比较属性、在比较儿子
+  const patchElement = (n1, n2) => {
+    let el = (n2.el = n1.el)
+    let oldProps = n1.props || {}
+    let newProps = n2.props || {}
+
+    patchProps(oldProps, newProps, el)
+    patchChildren(n1, n2, el)
+  }
+
   const processElement = (n1, n2, container, anchor) => {
     if (n1 === null) {
-      // TODO 挂载
+      // 挂载
+      mountElement(n2, container, anchor)
     } else {
-      // TODO diff
+      // diff
+      patchElement(n1, n2)
     }
   }
 
