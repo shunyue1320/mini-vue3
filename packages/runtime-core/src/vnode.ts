@@ -34,7 +34,7 @@ export function createVnode(type, props, children = null) {
       children = String(children)
       type = ShapeFlags.TEXT_CHILDREN
     }
-    vnode.shapeFlag = type
+    vnode.shapeFlag |= type
   }
   return vnode
 }

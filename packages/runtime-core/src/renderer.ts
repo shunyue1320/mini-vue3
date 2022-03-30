@@ -84,7 +84,99 @@ export function createRenderer(renderOptions) {
 
   // 核心 diff 流程
   const patchKeyedChildren = (c1, c2, el) => {
-    // TODO
+    let i = 0
+    let e1 = c1.length - 1 // 老的
+    let e2 = c2.length - 1 // 新的
+
+    /*************** start 特殊处理：针对常规头尾增删规操作 *******************/
+
+    // 从前往后逐一对比 vnode 不同跳出
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i]
+      const n2 = c2[i]
+      // 比较两个 vnode 是同一个
+      if (isSameVnode(n1, n2)) {
+        patch(n1, n2, el) // 这样做就是比较两个节点的属性和子节点
+      } else {
+        break
+      }
+      i++
+    }
+
+    // 从后往前逐一对比 vnode 不同跳出
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[e1]
+      const n2 = c2[e2]
+      if (isSameVnode(n1, n2)) {
+        patch(n1, n2, el)
+      } else {
+        break
+      }
+      e1--
+      e2--
+    }
+
+    // 有一方全部比较完毕了 ，要么就删除 ， 要么就添加
+    if (i > e1) {
+      if (i <= e2) {
+        while (i <= e2) {
+          const nextPos = e2 + 1
+          const anchor = nextPos < c2.length ? c2[nextPos].el : null
+          patch(null, c2[i], el, anchor) // 新增
+          i++
+        }
+      }
+    } else if (i > e2) {
+      if (i <= e1) {
+        while (i <= e1) {
+          unmount(c1[i]) // 卸载
+          i++
+        }
+      }
+    }
+
+    /*************** end 特殊处理：针对常规头尾增删规操作 *******************/
+
+    // 乱序比对
+    let s1 = i
+    let s2 = i
+    const keyToNewIndexMap = new Map()
+    for (let i = s2; i < e2; i++) {
+      keyToNewIndexMap.set(c2[i].key, i)
+    }
+
+    // 循环老的元素 看一下新的里面有没有，如果有说明要比较差异，没有要添加到列表中，老的有新的没有要删除
+    const toBePatched = e2 - s2 + 1 // 新的总个数
+    const newIndexToOldIndexMap = new Array(toBePatched).fill(0) // 一个记录是否比对过的映射表
+    for (let i = s1; i <= e1; i++) {
+      const oldChild = c1[i] // 老的孩子
+      let newIndex = keyToNewIndexMap.get(oldChild.key) // 用老的孩子去新的里面找
+      if (newIndex == undefined) {
+        unmount(oldChild) // 多余的删掉
+      } else {
+        // 新的位置对应的老的位置 , 如果数组里放的值>0说明 已经pactch过了
+        newIndexToOldIndexMap[newIndex - s2] = i + 1 // 用来标记当前所patch过的结果
+        patch(oldChild, c2[newIndex], el)
+      }
+    } // 到这这是新老属性和儿子的比对，没有移动位置
+
+    // 需要移动位置
+    for (let i = toBePatched - 1; i >= 0; i--) {
+      let index = i + s2
+      let current = c2[index] // 找到h
+      let anchor = index + 1 < c2.length ? c2[index + 1].el : null
+      if (newIndexToOldIndexMap[i] === 0) {
+        // 创建   5 3 4 0
+        patch(null, current, el, anchor)
+      } else {
+        // 不是0 说明是已经比对过属性和儿子的了
+        hostInsert(current.el, el, anchor) // 目前无论如何都做了一遍倒叙插入，其实可以不用的， 可以根据刚才的数组来减少插入次数
+      }
+
+      // 这里发现缺失逻辑 我需要看一下current有没有el。如果没有el说明是新增的逻辑
+
+      // 最长递增子序列来实现  vue2 在移动元素的时候会有浪费  优化
+    }
   }
 
   // 比较新旧 vnode
@@ -97,8 +189,10 @@ export function createRenderer(renderOptions) {
 
     // 新的 vnode 是文本
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-      // 删除所有子节点
-      unmountChildren(c1)
+      if(prevShapeFlag & ShapeFlags.ARRAY_CHILDREN){
+        // 删除所有子节点
+        unmountChildren(c1)
+      }
       // 文本	!== 文本
       if (c1 !== c2) {
         hostSetElementText(el, c2)
