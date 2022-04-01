@@ -1,5 +1,6 @@
 import { isArray, isString, ShapeFlags } from '@vue/shared'
 import { Text, createVnode, isSameVnode } from './vnode'
+import { getSequence } from './sequence'
 
 export function createRenderer(renderOptions) {
   // 对 dom 节点的增删改查的跨平台 api，可由用户传入 （默认为操作浏览器dom api）
@@ -160,7 +161,11 @@ export function createRenderer(renderOptions) {
       }
     } // 到这这是新老属性和儿子的比对，没有移动位置
 
+    // 获取最长递增子序列
+    let increment = getSequence(newIndexToOldIndexMap)
+
     // 需要移动位置
+    let j = increment.length - 1
     for (let i = toBePatched - 1; i >= 0; i--) {
       let index = i + s2
       let current = c2[index] // 找到h
@@ -170,12 +175,14 @@ export function createRenderer(renderOptions) {
         patch(null, current, el, anchor)
       } else {
         // 不是0 说明是已经比对过属性和儿子的了
-        hostInsert(current.el, el, anchor) // 目前无论如何都做了一遍倒叙插入，其实可以不用的， 可以根据刚才的数组来减少插入次数
+        if (i != increment[j]) {
+          hostInsert(current.el, el, anchor) // 目前无论如何都做了一遍倒叙插入，其实可以不用的， 可以根据刚才的数组来减少插入次数
+        } else {
+          j--
+        }
       }
 
       // 这里发现缺失逻辑 我需要看一下current有没有el。如果没有el说明是新增的逻辑
-
-      // 最长递增子序列来实现  vue2 在移动元素的时候会有浪费  优化
     }
   }
 
@@ -189,7 +196,7 @@ export function createRenderer(renderOptions) {
 
     // 新的 vnode 是文本
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-      if(prevShapeFlag & ShapeFlags.ARRAY_CHILDREN){
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         // 删除所有子节点
         unmountChildren(c1)
       }
