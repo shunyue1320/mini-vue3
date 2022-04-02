@@ -1,4 +1,4 @@
-import { isArray, isString, ShapeFlags } from '@vue/shared'
+import { isArray, isObject, isString, ShapeFlags } from '@vue/shared'
 
 export const Text = Symbol('Text')
 
@@ -15,7 +15,11 @@ export function isSameVnode(n1, n2) {
 
 // 虚拟节点有很多：组件的、元素的、文本的   h('h1')
 export function createVnode(type, props, children = null) {
-  let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0
+  let shapeFlag = isString(type)
+    ? ShapeFlags.ELEMENT
+    : isObject(type)
+    ? ShapeFlags.STATEFUL_COMPONENT
+    : 0
 
   // 虚拟dom就是一个vnode对象，方便diff算法。
   const vnode = {

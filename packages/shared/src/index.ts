@@ -10,9 +10,6 @@ export const isNumber = (value) =>{
 export const isFunction = (value) =>{
   return typeof value === 'function'
 }
-export const isReactive = () => {
-
-}
 
 export const isArray = Array.isArray;
 export const assign = Object.assign

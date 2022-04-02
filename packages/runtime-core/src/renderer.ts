@@ -1,6 +1,8 @@
+import { reactive, ReactiveEffect } from '@vue/reactivity'
 import { isArray, isString, ShapeFlags } from '@vue/shared'
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
+import { queueJob } from "./scheduler";
 
 export function createRenderer(renderOptions) {
   // 对 dom 节点的增删改查的跨平台 api，可由用户传入 （默认为操作浏览器dom api）
@@ -256,6 +258,48 @@ export function createRenderer(renderOptions) {
     }
   }
 
+  const mountComponent = (vnode, container, anchor) => {
+    let { data=()=>{}, render} = vnode.type
+    const state = reactive(data()) // pinia 源码就是 reactive({})  作为组件的状态
+
+    const instance = {
+      state,
+      vnode,
+      subTree: null,
+      isMounted: false,
+      update: null,
+    }
+
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        const subTree = render.call(state)
+        patch(null, subTree, container, anchor)
+        instance.subTree = subTree
+        instance.isMounted = true
+      } else {
+        const subTree = render.call(state)
+        patch(instance.subTree, subTree, container, anchor)
+        instance.subTree = subTree
+      }
+    }
+
+    // 组件的异步更新
+    const effect = new ReactiveEffect(componentUpdateFn, () => queueJob(instance.update))
+    // 我们将组件强制更新的逻辑保存到了组件的实例上，后续可以使用
+    // 调用effect.run可以让组件强制重新渲染
+    let update = instance.update = effect.run.bind(effect)
+    update()
+  }
+
+  // 统一处理组件， 里面在区分是普通的还是 函数式组件
+  const processComponent = (n1, n2, container, anchor) => {
+    if (n1 == null) {
+      mountComponent(n2, container, anchor)
+    } else {
+      // props 改变组件更新
+    }
+  }
+
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
       return
@@ -278,6 +322,8 @@ export function createRenderer(renderOptions) {
         // 处理元素
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor)
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(n1, n2, container, anchor)
         }
         break
     }
