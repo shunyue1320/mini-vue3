@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+
+<body>
+	<div id="app"></div>
+	<!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+	<!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+	<script src="./runtime-dom.global.js"></script>
+	<script>
+		let { createRenderer, h, render, Text, Fragment } = VueRuntimeDOM
+		render(h(Fragment,[h(Text,'hello'),h('h1','world')]),app);
+	</script>
+</body>
+
+</html>

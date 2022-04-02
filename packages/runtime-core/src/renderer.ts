@@ -1,5 +1,5 @@
 import { isArray, isString, ShapeFlags } from '@vue/shared'
-import { Text, createVnode, isSameVnode } from './vnode'
+import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 
 export function createRenderer(renderOptions) {
@@ -61,6 +61,14 @@ export function createRenderer(renderOptions) {
       if (n1.children !== n2.children) {
         hostSetText(el, n2.children)
       }
+    }
+  }
+
+  const processFragment = (n1, n2, container) => {
+    if (n1 == null) {
+      mountChildren(n2.children, container)
+    } else {
+      patchChildren(n1, n2, container)
     }
   }
 
@@ -262,6 +270,9 @@ export function createRenderer(renderOptions) {
       case Text:
         // 处理文本
         processText(n1, n2, container)
+        break
+      case Fragment:
+        processFragment(n1, n2, container)
         break
       default:
         // 处理元素
