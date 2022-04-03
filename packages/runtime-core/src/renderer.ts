@@ -2,7 +2,8 @@ import { reactive, ReactiveEffect } from '@vue/reactivity'
 import { isArray, isString, ShapeFlags } from '@vue/shared'
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
-import { queueJob } from "./scheduler";
+import { queueJob } from './scheduler'
+import { createComponentInstance, setupComponent } from './component'
 
 export function createRenderer(renderOptions) {
   // 对 dom 节点的增删改查的跨平台 api，可由用户传入 （默认为操作浏览器dom api）
@@ -259,35 +260,36 @@ export function createRenderer(renderOptions) {
   }
 
   const mountComponent = (vnode, container, anchor) => {
-    let { data=()=>{}, render} = vnode.type
-    const state = reactive(data()) // pinia 源码就是 reactive({})  作为组件的状态
+    // 1.创建组件实例
+    let instance = (vnode.component = createComponentInstance(vnode))
+    // 2. 赋值给实例
+    setupComponent(instance)
+    // 3. 创建 effect
+    setupRenderEffect(instance, container, anchor)
+  }
 
-    const instance = {
-      state,
-      vnode,
-      subTree: null,
-      isMounted: false,
-      update: null,
-    }
-
+  const setupRenderEffect = (instance, container, anchor) => {
+    const { render, proxy } = instance
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render.call(state)
+        const subTree = render.call(proxy)
         patch(null, subTree, container, anchor)
         instance.subTree = subTree
         instance.isMounted = true
       } else {
-        const subTree = render.call(state)
+        const subTree = render.call(proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
       }
     }
 
     // 组件的异步更新
-    const effect = new ReactiveEffect(componentUpdateFn, () => queueJob(instance.update))
+    const effect = new ReactiveEffect(componentUpdateFn, () =>
+      queueJob(instance.update)
+    )
     // 我们将组件强制更新的逻辑保存到了组件的实例上，后续可以使用
     // 调用effect.run可以让组件强制重新渲染
-    let update = instance.update = effect.run.bind(effect)
+    let update = (instance.update = effect.run.bind(effect))
     update()
   }
 
