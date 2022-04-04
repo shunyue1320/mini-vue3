@@ -552,7 +552,9 @@ var VueRuntimeDOM = (() => {
           instance.subTree = subTree;
         }
       };
-      const effect2 = new ReactiveEffect(componentUpdateFn, () => queueJob(instance.update));
+      const effect2 = new ReactiveEffect(componentUpdateFn, () => {
+        queueJob(instance.update);
+      });
       let update = instance.update = effect2.run.bind(effect2);
       update();
     };

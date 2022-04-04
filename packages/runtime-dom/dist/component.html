@@ -17,6 +17,9 @@
 		let { createRenderer, h, render, Text, Fragment } = VueRuntimeDOM
 		// vue3 兼容vue2的写法，简单的可以采用optionsApi，复杂的采用compositionApi
 		const VueComponent = {
+			props: {
+				parentdata: String
+			},
 			data() {
 				return { name: '小头', age: 10, grade:1 }
 			},
@@ -27,10 +30,10 @@
 					this.age++
 					this.grade++
 				}, 1000)
-				return h('h1', `${this.name}今年${this.age}岁，${this.grade}年级`);
+				return h('h1', `${this.name}今年${this.age}岁，${this.grade}年级。 ${this.parentdata}`);
 			}
 		}
-		render(h(VueComponent), app);
+		render(h(VueComponent, {parentdata: 'props数据'}), app);
 	</script>
 </body>
 

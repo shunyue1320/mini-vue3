@@ -18,7 +18,7 @@ export function createVnode(type, props, children = null) {
   let shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : isObject(type)
-    ? ShapeFlags.STATEFUL_COMPONENT
+    ? ShapeFlags.STATEFUL_COMPONENT // 组件标记
     : 0
 
   // 虚拟dom就是一个vnode对象，方便diff算法。

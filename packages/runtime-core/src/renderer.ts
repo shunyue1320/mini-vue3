@@ -284,9 +284,9 @@ export function createRenderer(renderOptions) {
     }
 
     // 组件的异步更新
-    const effect = new ReactiveEffect(componentUpdateFn, () =>
+    const effect = new ReactiveEffect(componentUpdateFn, () => {
       queueJob(instance.update)
-    )
+    })
     // 我们将组件强制更新的逻辑保存到了组件的实例上，后续可以使用
     // 调用effect.run可以让组件强制重新渲染
     let update = (instance.update = effect.run.bind(effect))
