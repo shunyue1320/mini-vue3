@@ -1,5 +1,5 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity'
-import { isArray, isNumber, isString, ShapeFlags } from '@vue/shared'
+import { isArray, isNumber, isString, ShapeFlags, invokeArrayFns } from '@vue/shared'
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
@@ -279,19 +279,32 @@ export function createRenderer(renderOptions) {
     const { render, proxy } = instance
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render.call(proxy)
+        let { bm, m } = instance
+        if (bm) {
+          invokeArrayFns(bm)
+        }
+        const subTree = render.call(instance.proxy, instance.proxy)
         patch(null, subTree, container, anchor)
+        if (m) {
+          invokeArrayFns(m)
+        }
         instance.subTree = subTree
         instance.isMounted = true
       } else {
-        let { next } = instance
+        let { next, bu, u } = instance
         // 先更新 props 属性再执行 render
         if (next) {
           updateComponentPreRender(instance, next)
         }
-        const subTree = render.call(proxy)
+        if (bu) {
+          invokeArrayFns(bu)
+        }
+        const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
+        if (u) {
+          invokeArrayFns(u)
+        }
       }
     }
 

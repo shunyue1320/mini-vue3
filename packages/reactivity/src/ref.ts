@@ -41,15 +41,15 @@ class ObjectRefImpl {
   }
 }
 
-export function toRef(Object, key) {
-  return new ObjectRefImpl(Object, key)
+export function toRef(object, key) {
+  return new ObjectRefImpl(object, key)
 }
 
 export function toRefs(object) {
   const result = isArray(object) ? new Array(object.length) : {}
 
   for (const key in object) {
-    result[key] = toRef(Object, key)
+    result[key] = toRef(object, key)
   }
   return result
 }

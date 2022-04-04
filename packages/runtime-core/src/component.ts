@@ -1,6 +1,9 @@
 import { reactive, proxyRefs } from '@vue/reactivity'
 import { initProps } from './componentProps'
 import { hasOwn, isFunction, ShapeFlags } from '@vue/shared'
+export let currentInstance = null
+export const getCurrentInstance = () => currentInstance
+export const setCurrentInstance = instance => (currentInstance = instance)
 
 export function createComponentInstance(vnode) {
   // 组件的实例
@@ -22,7 +25,7 @@ export function createComponentInstance(vnode) {
 
 const publicPropertyMap = {
   $attrs: i => i.attrs,
-  $slots:(i)=> i.slots
+  $slots: i => i.slots
 }
 
 const publicInstanceProxy = {
@@ -99,10 +102,13 @@ export function setupComponent(instance) {
       attrs: instance.attrs,
       slots: instance.slots
     }
+
+    setCurrentInstance(instance)
     const setupResult = setup(instance.props, setupContext)
+    setCurrentInstance(null)
 
     // setup 返回的是函数说明是 render 方法
-    if(isFunction(setupResult)){
+    if (isFunction(setupResult)) {
       instance.render = setupResult
     } else {
       // proxyRefs 对内部的ref 进行取消.value

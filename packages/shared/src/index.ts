@@ -17,6 +17,12 @@ export const assign = Object.assign
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export const hasOwn = (value, key) => hasOwnProperty.call(value, key)
 
+export const invokeArrayFns = (fns) =>{
+  for(let i = 0 ; i < fns.length;i++){
+      fns[i]()
+  }
+}
+
 // vue3提供的形状标识
 export const enum ShapeFlags {
   ELEMENT = 1,

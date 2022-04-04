@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实现setup渲染</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    let { createRenderer, h, render, Text, Fragment, ref, computed, onBeforeMount, onMounted, onBeforeUpdate, onUpdated, reactive, toRefs, getCurrentInstance } = VueRuntimeDOM
+    const useCounter = () => {
+      const state = reactive({ count: 1 });
+      const handleClick = () => {
+        state.count++;
+      }
+      const doubleCount = computed(() => {
+        return state.count * 2
+      })
+      onBeforeMount(() => { // 生命周期会自动的和当前的组件关联起来  
+        let currentInstance = getCurrentInstance();
+        console.log('before mount', currentInstance)
+      })
+      onMounted(() => {
+        let currentInstance = getCurrentInstance();
+        console.log('mounted', currentInstance)
+      });
+      onBeforeUpdate(() => {
+        console.log('beforeUpdate')
+      })
+      onUpdated(() => {
+        console.log('updated')
+      })
+      return { state, handleClick, doubleCount }
+    }
+    const VueComponent = {
+      setup() { // 生命周期的钩子只能在setup中使用
+        const { state: counter, handleClick, doubleCount } = useCounter();
+        return {
+          ...toRefs(counter),
+          handleClick,
+          doubleCount
+        }
+      },
+      render() {
+        console.log('render', this.count)
+        return h('p', { onClick: this.handleClick }, this.count.value + ':' + this.doubleCount)
+      }
+    }
+    render(h(VueComponent), app);
+  </script>
+</body>
+
+</html>
