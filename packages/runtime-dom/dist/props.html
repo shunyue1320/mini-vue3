@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>props改变渲染</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    let { createRenderer, h, render, Text, Fragment } = VueRuntimeDOM
+    const MyComponent = {
+      props: {
+        address: String
+      },
+      render() { // this.address => instance.props.address
+        return h(Text, this.address)
+      }
+    }
+    const VueComponent = {
+      data() {
+        return { flag: false }
+      },
+      render() {
+        console.log("111zh-------1", this.flag)
+        return h(Fragment, [
+          // onClick 原生点击事件
+          h('button', { onClick: () => {
+            this.flag = !this.flag
+          }}, '切换模式'),
+          h(MyComponent, { address: this.flag ? '太阳' : '月亮' })
+        ])
+      }
+    }
+    render(h(VueComponent), app);
+  </script>
+</body>
+
+</html>

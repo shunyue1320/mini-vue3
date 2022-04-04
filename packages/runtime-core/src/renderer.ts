@@ -4,6 +4,7 @@ import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
 import { createComponentInstance, setupComponent } from './component'
+import { hasPropsChanged, updateProps } from './componentProps'
 
 export function createRenderer(renderOptions) {
   // 对 dom 节点的增删改查的跨平台 api，可由用户传入 （默认为操作浏览器dom api）
@@ -268,6 +269,12 @@ export function createRenderer(renderOptions) {
     setupRenderEffect(instance, container, anchor)
   }
 
+  const updateComponentPreRender = (instance, next) => {
+    instance.next = null
+    instance.vnode = next
+    updateProps(instance.props, next.props)
+  }
+
   const setupRenderEffect = (instance, container, anchor) => {
     const { render, proxy } = instance
     const componentUpdateFn = () => {
@@ -277,6 +284,11 @@ export function createRenderer(renderOptions) {
         instance.subTree = subTree
         instance.isMounted = true
       } else {
+        let { next } = instance
+        // 先更新 props 属性再执行 render
+        if (next) {
+          updateComponentPreRender(instance, next)
+        }
         const subTree = render.call(proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
@@ -293,12 +305,35 @@ export function createRenderer(renderOptions) {
     update()
   }
 
+  const shouldUpdateComponent = (n1, n2) => {
+    const { props: prevProps, children: prevChildren } = n1
+    const { props: nextProps, children: nextChildren } = n2
+    if (prevProps === nextProps) {
+      return
+    }
+    if (prevChildren || nextChildren) {
+      return true
+    }
+    return hasPropsChanged(prevProps, nextProps)
+  }
+
+  const updateComponent = (n1, n2) => {
+    // instance.props 是响应式的，而且可以更改  属性的更新会导致页面重新渲染
+    const instance = (n2.component = n1.component) // 对于元素而言，复用的是dom节点，对于组件来说复用的是实例
+    // 需要更新就强制调用组件的 update 方法
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2 // 将新的虚拟节点放到next属性上
+      instance.update() // 统一调用update方法来更新
+    }
+  }
+
   // 统一处理组件， 里面在区分是普通的还是 函数式组件
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 == null) {
       mountComponent(n2, container, anchor)
     } else {
       // props 改变组件更新
+      updateComponent(n1, n2)
     }
   }
 

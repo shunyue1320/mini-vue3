@@ -281,6 +281,29 @@ var VueRuntimeDOM = (() => {
     instance.props = reactive(props);
     instance.attrs = attrs;
   }
+  function hasPropsChanged(prevProps = {}, nextProps = {}) {
+    const nextKeys = Object.keys(nextProps);
+    if (nextKeys.length !== Object.keys(prevProps).length) {
+      return true;
+    }
+    for (let i = 0; i < nextKeys.length; i++) {
+      const key = nextKeys[i];
+      if (prevProps[key] !== nextProps[key]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function updateProps(prevProps, nextProps) {
+    for (const key in nextProps) {
+      prevProps[key] = nextProps[key];
+    }
+    for (const key in prevProps) {
+      if (!hasOwn(nextProps, key)) {
+        delete prevProps[key];
+      }
+    }
+  }
 
   // packages/runtime-core/src/component.ts
   function createComponentInstance(vnode) {
@@ -294,7 +317,8 @@ var VueRuntimeDOM = (() => {
       props: {},
       attrs: {},
       proxy: null,
-      render: null
+      render: null,
+      setupState: {}
     };
     return instance;
   }
@@ -303,9 +327,11 @@ var VueRuntimeDOM = (() => {
   };
   var publicInstanceProxy = {
     get(target, key) {
-      const { data, props } = target;
+      const { data, props, setupState } = target;
       if (data && hasOwn(data, key)) {
         return data[key];
+      } else if (hasOwn(setupState, key)) {
+        return setupState[key];
       } else if (props && hasOwn(props, key)) {
         return props[key];
       }
@@ -315,10 +341,12 @@ var VueRuntimeDOM = (() => {
       }
     },
     set(target, key, value) {
-      const { data, props } = target;
+      const { data, props, setupState } = target;
       if (data && hasOwn(data, key)) {
         data[key] = value;
         return true;
+      } else if (hasOwn(setupState, key)) {
+        setupState[key] = value;
       } else if (props && hasOwn(props, key)) {
         console.warn("attempting to mutate prop, Props are readonly." + key);
         return false;
@@ -337,7 +365,10 @@ var VueRuntimeDOM = (() => {
       }
       instance.data = reactive(data.call(instance.proxy));
     }
-    instance.render = type.render;
+    let setup = type.setup;
+    if (!instance.render) {
+      instance.render = type.render;
+    }
   }
 
   // packages/runtime-core/src/renderer.ts
@@ -538,6 +569,11 @@ var VueRuntimeDOM = (() => {
       setupComponent(instance);
       setupRenderEffect(instance, container, anchor);
     };
+    const updateComponentPreRender = (instance, next) => {
+      instance.next = null;
+      instance.vnode = next;
+      updateProps(instance.props, next.props);
+    };
     const setupRenderEffect = (instance, container, anchor) => {
       const { render: render3, proxy } = instance;
       const componentUpdateFn = () => {
@@ -547,6 +583,10 @@ var VueRuntimeDOM = (() => {
           instance.subTree = subTree;
           instance.isMounted = true;
         } else {
+          let { next } = instance;
+          if (next) {
+            updateComponentPreRender(instance, next);
+          }
           const subTree = render3.call(proxy);
           patch(instance.subTree, subTree, container, anchor);
           instance.subTree = subTree;
@@ -558,10 +598,29 @@ var VueRuntimeDOM = (() => {
       let update = instance.update = effect2.run.bind(effect2);
       update();
     };
+    const shouldUpdateComponent = (n1, n2) => {
+      const { props: prevProps, children: prevChildren } = n1;
+      const { props: nextProps, children: nextChildren } = n2;
+      if (prevProps === nextProps) {
+        return;
+      }
+      if (prevChildren || nextChildren) {
+        return true;
+      }
+      return hasPropsChanged(prevProps, nextProps);
+    };
+    const updateComponent = (n1, n2) => {
+      const instance = n2.component = n1.component;
+      if (shouldUpdateComponent(n1, n2)) {
+        instance.next = n2;
+        instance.update();
+      }
+    };
     const processComponent = (n1, n2, container, anchor) => {
       if (n1 == null) {
         mountComponent(n2, container, anchor);
       } else {
+        updateComponent(n1, n2);
       }
     };
     const patch = (n1, n2, container, anchor = null) => {

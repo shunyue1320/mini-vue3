@@ -22,3 +22,28 @@ export function initProps(instance, rawProps) {
   instance.props = reactive(props)
   instance.attrs = attrs
 }
+
+export function hasPropsChanged(prevProps = {},nextProps = {}) {
+  const nextKeys = Object.keys(nextProps);
+  if(nextKeys.length !== Object.keys(prevProps).length){
+    return true
+  }
+  for(let i = 0; i < nextKeys.length;i++){
+    const key = nextKeys[i];
+    if (prevProps[key] !== nextProps[key]) {
+      return true
+    }
+  }
+  return false
+}
+
+export function updateProps(prevProps,nextProps){ 
+  for (const key in nextProps) {
+    prevProps[key] = nextProps[key]
+  }
+  for (const key in prevProps) {
+    if (!hasOwn(nextProps, key)) {
+      delete prevProps[key]
+    }
+  }
+}
