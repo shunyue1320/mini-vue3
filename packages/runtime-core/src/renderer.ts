@@ -1,5 +1,5 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity'
-import { isArray, isString, ShapeFlags } from '@vue/shared'
+import { isArray, isNumber, isString, ShapeFlags } from '@vue/shared'
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
@@ -21,7 +21,7 @@ export function createRenderer(renderOptions) {
   } = renderOptions
 
   const normalize = (children, i) => {
-    if (isString(children[i])) {
+    if (isString(children[i]) || isNumber(children[i])) {
       let vnode = createVnode(Text, null, children[i])
       children[i] = vnode
     }

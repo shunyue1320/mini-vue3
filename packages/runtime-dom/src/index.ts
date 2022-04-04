@@ -1,6 +1,7 @@
 // runtime-dom 都是对浏览器dom的操作 独立出来 便于夸平台
 
 import { createRenderer, h, Text, isVnode, isSameVnode, Fragment } from '@vue/runtime-core'
+export { ref } from '@vue/reactivity'
 import { nodeOps } from './nodeOps'
 import { patchProp } from './patchProp'
 

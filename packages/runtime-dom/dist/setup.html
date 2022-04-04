@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实现setup渲染</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    let { createRenderer, h, render, Text, Fragment, ref } = VueRuntimeDOM
+
+    const VueComponent = {
+      props: {
+        grade: Number,
+      },
+      setup(props) {
+        const name = ref('小头')
+        const age = ref('10')
+
+        setTimeout(() => {
+          age.value++
+        }, 1000);
+
+        // 返回render函数，数据需要正常的.value ,如果返回的是对象，对象可以被自动包裹proxyRefs
+        return () => {
+          return h('p', `${name.value} - ${age.value}岁 - ${props.grade}年级`)
+        }
+      },
+    }
+    render(h(VueComponent, { grade: 6 }), app)
+  </script>
+</body>
+
+</html>
