@@ -21,7 +21,8 @@ export function createComponentInstance(vnode) {
 }
 
 const publicPropertyMap = {
-  $attrs: i => i.attrs
+  $attrs: i => i.attrs,
+  $slots:(i)=> i.slots
 }
 
 const publicInstanceProxy = {

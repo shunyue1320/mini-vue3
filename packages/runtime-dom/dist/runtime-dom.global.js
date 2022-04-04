@@ -373,7 +373,8 @@ var VueRuntimeDOM = (() => {
     return instance;
   }
   var publicPropertyMap = {
-    $attrs: (i) => i.attrs
+    $attrs: (i) => i.attrs,
+    $slots: (i) => i.slots
   };
   var publicInstanceProxy = {
     get(target, key) {

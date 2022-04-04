@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实现setup渲染</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    let { createRenderer, h, render, Text, Fragment, ref } = VueRuntimeDOM
+
+    const MyComponent = {
+      setup(props, ctx) {
+        console.log('MyComponent.ctx =', ctx)
+        return {}
+      },
+      render() {
+        return h(Fragment, [
+          h('div', this.$slots.header()),
+          h('div', this.$slots.main()),
+          h('div', this.$slots.footer())
+        ])
+      }
+    }
+    const VueComponent = {
+      setup(props, ctx) {
+        // 执行事件
+        ctx.emit('xxx', 'xxx事件参数')
+        return {}
+      },
+      render() {
+        // children如果是对象说明是组件的插槽
+        return h(MyComponent, null, {
+          header: () => h('p', 'header'),
+          footer: () => h('p', 'footer'),
+          main: () => h('h1', 'main')
+        })
+      }
+    }
+    // vue里面 @符绑定的事件  会变成 onX
+    render(h(VueComponent, { onXxx: (value) => console.log(value) }), app)
+  </script>
+</body>
+
+</html>
