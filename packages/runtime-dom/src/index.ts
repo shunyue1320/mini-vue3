@@ -1,20 +1,6 @@
 // runtime-dom 都是对浏览器dom的操作 独立出来 便于夸平台
 
 import { createRenderer } from '@vue/runtime-core'
-export {
-  h,
-  Text,
-  isVnode,
-  isSameVnode,
-  Fragment,
-  onBeforeMount,
-  onMounted,
-  onBeforeUpdate,
-  onUpdated,
-  getCurrentInstance,
-  setCurrentInstance
-} from '@vue/runtime-core'
-export { ref, toRefs, reactive, computed } from '@vue/reactivity'
 import { nodeOps } from './nodeOps'
 import { patchProp } from './patchProp'
 
@@ -27,3 +13,5 @@ export function render(vnode, container) {
 }
 
 export { createRenderer }
+export * from '@vue/reactivity'
+export * from '@vue/runtime-core'

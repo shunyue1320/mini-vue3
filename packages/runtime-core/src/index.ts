@@ -1,6 +1,16 @@
 export { createRenderer } from './renderer'
 export { h } from './h'
-export { Text, isVnode, isSameVnode, createVnode, Fragment } from './vnode'
+export {
+  Text,
+  isVnode,
+  isSameVnode,
+  createVnode,
+  Fragment,
+  openBlock,
+  toDisplayString,
+  createElementVNode,
+  createElementBlock
+} from './vnode'
 export { getCurrentInstance, setCurrentInstance } from './component'
 export {
   onBeforeMount,

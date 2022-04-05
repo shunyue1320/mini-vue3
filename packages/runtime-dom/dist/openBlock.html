@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实现setup渲染</title>
+  <style>
+    .red {
+      color: red;
+    }
+
+    .green {
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist//runtime-dom.global.js"></script> -->
+  <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    let { createRenderer, h, render, Text, Fragment, ref, toRefs, reactive,
+      openBlock: _openBlock,
+      toDisplayString: _toDisplayString,
+      createElementBlock: _createElementBlock,
+      createElementVNode: _createElementVNode
+    } = VueRuntimeDOM
+
+    const VueComponent = {
+      setup() {
+        const state = reactive({ name: '小头', clazz: 'red' })
+        setTimeout(() => {
+          state.clazz = 'green'
+        }, 1000)
+        return { state }
+      },
+
+      /*
+        <div>
+          <h1>Hello World</h1>
+          <span :class="clazz">Hello World</span>
+        </div>
+       */
+      // 上面注释代码放入 https://vue-next-template-explorer.netlify.app/ 中 模版编译 得到下面代码
+      render(_ctx) {
+        // _openBlock的作用是收集动态节点
+        let vnode = (_openBlock(), _createElementBlock("div", null, [
+          _createElementVNode("h1", null, "Hello World"),
+          _createElementVNode("span", { class: _ctx.state.clazz }, 'Hello World', 2 /* TEXT */)
+        ]))
+
+        // dynamicChildren 动态节点
+        console.log("vnode =", vnode)
+        return vnode
+      }
+    }
+    render(h(VueComponent), app);
+  </script>
+</body>
+
+</html>

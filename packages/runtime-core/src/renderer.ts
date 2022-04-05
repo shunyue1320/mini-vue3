@@ -1,5 +1,12 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity'
-import { isArray, isNumber, isString, ShapeFlags, invokeArrayFns } from '@vue/shared'
+import {
+  isArray,
+  isNumber,
+  isString,
+  ShapeFlags,
+  PatchFlags,
+  invokeArrayFns
+} from '@vue/shared'
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
@@ -240,14 +247,36 @@ export function createRenderer(renderOptions) {
     }
   }
 
+  const patchBlockChildren = (n1, n2) => {
+    for (let i = 0; i < n2.dynamicChildren.length; i++) {
+      // 树的递归比较, 现在是数组的比较
+      patchElement(n1.dynamicChildren[i], n2.dynamicChildren[i])
+    }
+  }
+
   // 先复用节点、在比较属性、在比较儿子
   const patchElement = (n1, n2) => {
     let el = (n2.el = n1.el)
     let oldProps = n1.props || {}
     let newProps = n2.props || {}
 
-    patchProps(oldProps, newProps, el)
-    patchChildren(n1, n2, el)
+    let { patchFlag } = n2
+    if (patchFlag & PatchFlags.CLASS) {
+      if (oldProps.class !== newProps.class) {
+        hostPatchProp(el, 'class', null, newProps.class)
+        // style ... 事件
+      } else {
+        patchProps(oldProps, newProps, el)
+      }
+    }
+
+    // 动态与非动态元素优化  靶向更新
+    if (n2.dynamicChildren) {
+      // 只比较了动态元素
+      patchBlockChildren(n1, n2)
+    } else {
+      patchChildren(n1, n2, el)
+    }
   }
 
   const processElement = (n1, n2, container, anchor) => {

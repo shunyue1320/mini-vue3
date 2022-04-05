@@ -21,9 +21,14 @@ var VueRuntimeDOM = (() => {
   var src_exports = {};
   __export(src_exports, {
     Fragment: () => Fragment,
+    ReactiveEffect: () => ReactiveEffect,
     Text: () => Text,
     computed: () => computed,
+    createElementBlock: () => createElementBlock,
+    createElementVNode: () => createVnode,
     createRenderer: () => createRenderer,
+    createVnode: () => createVnode,
+    effect: () => effect,
     getCurrentInstance: () => getCurrentInstance,
     h: () => h,
     isSameVnode: () => isSameVnode,
@@ -32,11 +37,16 @@ var VueRuntimeDOM = (() => {
     onBeforeUpdate: () => onBeforeUpdate,
     onMounted: () => onMounted,
     onUpdated: () => onUpdated,
+    openBlock: () => openBlock,
+    proxyRefs: () => proxyRefs,
     reactive: () => reactive,
     ref: () => ref,
     render: () => render,
     setCurrentInstance: () => setCurrentInstance,
-    toRefs: () => toRefs
+    toDisplayString: () => toDisplayString,
+    toRef: () => toRef,
+    toRefs: () => toRefs,
+    watch: () => watch
   });
 
   // packages/reactivity/src/effect.ts
@@ -76,6 +86,13 @@ var VueRuntimeDOM = (() => {
       }
     }
   };
+  function effect(fn, options = {}) {
+    const _effect = new ReactiveEffect(fn, options.scheduler);
+    _effect.run();
+    const runner = _effect.run.bind(_effect);
+    runner.effect = _effect;
+    return runner;
+  }
   var targetMap = /* @__PURE__ */ new WeakMap();
   function track(target, type, key) {
     if (activeEffect) {
@@ -184,6 +201,9 @@ var VueRuntimeDOM = (() => {
     reactiveMap.set(target, proxy);
     return proxy;
   }
+  function isReactive(value) {
+    return !!(value && value["__v_isReactive" /* IS_REACTIVE */]);
+  }
 
   // packages/reactivity/src/computed.ts
   var ComputedRefImpl = class {
@@ -225,6 +245,45 @@ var VueRuntimeDOM = (() => {
       setter = getterOrOptions.set;
     }
     return new ComputedRefImpl(getter, setter);
+  }
+
+  // packages/reactivity/src/watch.ts
+  function tranversel(value, set = /* @__PURE__ */ new Set()) {
+    if (!isObject(value)) {
+      return value;
+    }
+    if (set.has(value)) {
+      return value;
+    }
+    set.add(value);
+    for (const key in value) {
+      tranversel(value[key], set);
+    }
+    return value;
+  }
+  function watch(source, cb) {
+    let getter;
+    if (isReactive(source)) {
+      getter = () => tranversel(source);
+    } else if (isFunction(source)) {
+      getter = source;
+    } else {
+      return;
+    }
+    let cleanup;
+    const onCleanup = (fn) => {
+      cleanup = fn;
+    };
+    let oldValue;
+    const job = () => {
+      if (cleanup)
+        cleanup();
+      const newValue = effect2.run();
+      cb(newValue, oldValue, onCleanup);
+      oldValue = newValue;
+    };
+    const effect2 = new ReactiveEffect(getter, job);
+    oldValue = effect2.run();
   }
 
   // packages/reactivity/src/ref.ts
@@ -302,7 +361,7 @@ var VueRuntimeDOM = (() => {
   function isSameVnode(n1, n2) {
     return n1.type === n2.type && n1.key === n2.key;
   }
-  function createVnode(type, props, children = null) {
+  function createVnode(type, props, children = null, patchFlag = 0) {
     let shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
     const vnode = {
       type,
@@ -311,7 +370,8 @@ var VueRuntimeDOM = (() => {
       el: null,
       key: props == null ? void 0 : props["key"],
       __v_isVnode: true,
-      shapeFlag
+      shapeFlag,
+      patchFlag
     };
     if (children) {
       let type2 = 0;
@@ -325,7 +385,25 @@ var VueRuntimeDOM = (() => {
       }
       vnode.shapeFlag |= type2;
     }
+    if (currentBlock && vnode.patchFlag > 0) {
+      currentBlock.push(vnode);
+    }
     return vnode;
+  }
+  var currentBlock = null;
+  function openBlock() {
+    currentBlock = [];
+  }
+  function createElementBlock(type, props, children, patchFlag) {
+    return setupBlock(createVnode(type, props, children, patchFlag));
+  }
+  function setupBlock(vnode) {
+    vnode.dynamicChildren = currentBlock;
+    currentBlock = [];
+    return vnode;
+  }
+  function toDisplayString(val) {
+    return isString(val) ? val : val == null ? "" : isObject(val) ? JSON.stringify(val) : String(val);
   }
 
   // packages/runtime-core/src/sequence.ts
@@ -707,12 +785,28 @@ var VueRuntimeDOM = (() => {
         }
       }
     };
+    const patchBlockChildren = (n1, n2) => {
+      for (let i = 0; i < n2.dynamicChildren.length; i++) {
+        patchElement(n1.dynamicChildren[i], n2.dynamicChildren[i]);
+      }
+    };
     const patchElement = (n1, n2) => {
       let el = n2.el = n1.el;
       let oldProps = n1.props || {};
       let newProps = n2.props || {};
-      patchProps(oldProps, newProps, el);
-      patchChildren(n1, n2, el);
+      let { patchFlag } = n2;
+      if (patchFlag & 2 /* CLASS */) {
+        if (oldProps.class !== newProps.class) {
+          hostPatchProp(el, "class", null, newProps.class);
+        } else {
+          patchProps(oldProps, newProps, el);
+        }
+      }
+      if (n2.dynamicChildren) {
+        patchBlockChildren(n1, n2);
+      } else {
+        patchChildren(n1, n2, el);
+      }
     };
     const processElement = (n1, n2, container, anchor) => {
       if (n1 === null) {

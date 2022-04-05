@@ -14,7 +14,7 @@ export function isSameVnode(n1, n2) {
 }
 
 // 虚拟节点有很多：组件的、元素的、文本的   h('h1')
-export function createVnode(type, props, children = null) {
+export function createVnode(type, props, children = null, patchFlag = 0) {
   let shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : isObject(type)
@@ -29,7 +29,8 @@ export function createVnode(type, props, children = null) {
     el: null, // 虚拟节点上对应的真实节点，后续diff算法
     key: props?.['key'],
     __v_isVnode: true,
-    shapeFlag
+    shapeFlag,
+    patchFlag
   }
 
   if (children) {
@@ -44,5 +45,38 @@ export function createVnode(type, props, children = null) {
     }
     vnode.shapeFlag |= type
   }
+
+  // 性能优化：把动态节点存到 currentBlock 中，后续只 diff 动态节点
+  if (currentBlock && vnode.patchFlag > 0) {
+    currentBlock.push(vnode)
+  }
   return vnode
+}
+
+export { createVnode as createElementVNode }
+
+// 用一个数组来收集多个动态节点 先执行 openBlock 后执行 createElementBlock
+let currentBlock = null
+export function openBlock() {
+  currentBlock = []
+}
+
+export function createElementBlock(type, props, children, patchFlag) {
+  return setupBlock(createVnode(type, props, children, patchFlag))
+}
+
+function setupBlock(vnode) {
+  vnode.dynamicChildren = currentBlock
+  currentBlock = []
+  return vnode
+}
+
+export function toDisplayString(val) {
+  return isString(val)
+    ? val
+    : val == null
+    ? ''
+    : isObject(val)
+    ? JSON.stringify(val)
+    : String(val)
 }
