@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>provide-inject实现</title>
+</head>
+
+<body>
+	<div id="app"></div>
+	<!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+	<!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+	<script src="./runtime-dom.global.js"></script>
+	<script>
+		let { h, render, reactive, getCurrentInstance, provide, inject } = VueRuntimeDOM
+
+		// provide 和 inject就是为了实现跨级通信， 在我们组件库中，想跨级通信 那么就采用provide/inject
+
+		// 如何实现的呢？ 使用的情况只能是 父 -》 子 -》 孙子 -》 曾孙
+		// 实现原理是在父组件上增加了一个provies属性， 当调用privde时候会像属性中存值
+		// 在渲染子组件的时候 子会将父的provides 放到自己的身上
+		// 所有的compositionAPI都要以setup为入口
+		// provide 和 inject只能在setup中使用
+		const Son = {
+			setup() {
+				let state = inject('VueComponent'); // 这里只是注入进来用
+				let age = inject('age', 13)
+				let instance = getCurrentInstance();
+				console.log("Son instance.parent", instance.parent)
+				return {
+					state, age
+				}
+			},
+			render() {
+				return h('h1', this.state.name + this.age)
+			}
+		}
+		const VueComponent = {
+			name: 'parent',
+			setup() {
+				const state = reactive({ name: '大头' });
+				provide('VueComponent', state);
+				// provide('age', 18);
+				setTimeout(() => state.name = '小头', 1000)
+			},
+			render() {
+				return h(Son)
+			}
+		}
+		render(h(VueComponent), app);
+
+
+	</script>
+</body>

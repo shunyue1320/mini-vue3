@@ -1,13 +1,15 @@
 import { reactive, proxyRefs } from '@vue/reactivity'
 import { initProps } from './componentProps'
-import { hasOwn, isFunction, ShapeFlags } from '@vue/shared'
+import { hasOwn, isFunction, isObject, ShapeFlags } from '@vue/shared'
 export let currentInstance = null
 export const getCurrentInstance = () => currentInstance
 export const setCurrentInstance = instance => (currentInstance = instance)
 
-export function createComponentInstance(vnode) {
+export function createComponentInstance(vnode, parent) {
   // 组件的实例
   const instance = {
+    provides: parent ? parent.provides : Object.create(null), // 所有的组件用的都是父亲的provides 
+    parent,
     data: null,
     vnode, // vue2的源码中组件的虚拟节点叫$vnode  渲染的内容叫_vnode
     subTree: null, // vnode组件的虚拟节点 subTree渲染的组件内容
@@ -110,7 +112,7 @@ export function setupComponent(instance) {
     // setup 返回的是函数说明是 render 方法
     if (isFunction(setupResult)) {
       instance.render = setupResult
-    } else {
+    } else if (isObject(setupResult)) {
       // proxyRefs 对内部的ref 进行取消.value
       instance.setupState = proxyRefs(setupResult)
     }

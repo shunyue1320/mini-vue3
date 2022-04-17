@@ -9,7 +9,7 @@ const renderOptions = Object.assign(nodeOps, { patchProp })
 
 export function render(vnode, container) {
   // 选传入平台dom操作的api 在创建渲染器 （目的： 方便跨平台时更换dom api）
-  createRenderer(renderOptions).render(vnode, container)
+  createRenderer(renderOptions).render(vnode, container, null)
 }
 
 export { createRenderer }

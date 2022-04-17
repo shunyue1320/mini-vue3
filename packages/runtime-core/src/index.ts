@@ -18,3 +18,5 @@ export {
   onBeforeUpdate,
   onUpdated
 } from './apiLifecycle'
+
+export { provide, inject } from './apiInject'
