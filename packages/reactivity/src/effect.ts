@@ -1,3 +1,5 @@
+import { recordEffectScope } from './effectScope'
+
 export let activeEffect = undefined
 
 function cleanupEffect(effect) {
@@ -12,7 +14,10 @@ export class ReactiveEffect {
   active = true
   deps = []
   parent = undefined
-  constructor(public fn, public scheduler) {}
+  constructor(public fn, public scheduler) {
+    // 给 EffectScope 添加 effect
+    recordEffectScope(this)
+  }
   run() {
     // 这里表示如果是非激活的情况，只需要执行函数，不需要进行依赖收集
     if (!this.active) {

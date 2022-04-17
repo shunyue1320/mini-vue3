@@ -17,11 +17,13 @@ var VueReactivity = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // packages/reactivity/src/index.js
+  // packages/reactivity/src/index.ts
   var src_exports = {};
   __export(src_exports, {
+    ReactiveEffect: () => ReactiveEffect,
     computed: () => computed,
     effect: () => effect,
+    effectScope: () => effectScope,
     proxyRefs: () => proxyRefs,
     reactive: () => reactive,
     ref: () => ref,
@@ -29,6 +31,49 @@ var VueReactivity = (() => {
     toRefs: () => toRefs,
     watch: () => watch
   });
+
+  // packages/reactivity/src/effectScope.ts
+  var activeEffectScope = null;
+  var EffectScope = class {
+    constructor(detached) {
+      this.active = true;
+      this.effects = [];
+      this.scopes = [];
+      if (!detached && activeEffectScope) {
+        activeEffectScope.scopes.push(this);
+      }
+    }
+    run(fn) {
+      if (this.active) {
+        try {
+          this.parent = activeEffectScope;
+          activeEffectScope = this;
+          return fn();
+        } finally {
+          activeEffectScope = this.parent;
+        }
+      }
+    }
+    stop() {
+      if (this.active) {
+        for (let i = 0; i < this.effects.length; i++) {
+          this.effects[i].stop();
+        }
+        for (let i = 0; i < this.scopes.length; i++) {
+          this.scopes[i].stop();
+        }
+        this.active = false;
+      }
+    }
+  };
+  function recordEffectScope(effect2) {
+    if (activeEffectScope && activeEffectScope.active) {
+      activeEffectScope.effects.push(effect2);
+    }
+  }
+  function effectScope(detached = false) {
+    return new EffectScope(detached);
+  }
 
   // packages/reactivity/src/effect.ts
   var activeEffect = void 0;
@@ -46,6 +91,7 @@ var VueReactivity = (() => {
       this.active = true;
       this.deps = [];
       this.parent = void 0;
+      recordEffectScope(this);
     }
     run() {
       if (!this.active) {
@@ -120,7 +166,7 @@ var VueReactivity = (() => {
     });
   }
 
-  // packages/shared/src/index.js
+  // packages/shared/src/index.ts
   var isObject = (val) => {
     return val !== null && typeof val === "object";
   };
@@ -292,13 +338,13 @@ var VueReactivity = (() => {
       this.object[this.key] = newValue;
     }
   };
-  function toRef(Object2, key) {
-    return new ObjectRefImpl(Object2, key);
+  function toRef(object, key) {
+    return new ObjectRefImpl(object, key);
   }
   function toRefs(object) {
     const result = isArray(object) ? new Array(object.length) : {};
     for (const key in object) {
-      result[key] = toRef(Object, key);
+      result[key] = toRef(object, key);
     }
     return result;
   }

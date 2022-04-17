@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>effectScope实现</title>
+</head>
+
+<body>
+	<div id="app"></div>
+	<!-- <script src="../../../node_modules/vue/dist/vue.global.js"></script> -->
+	<script src="./reactivity.global.js"></script>
+	<script>
+		const { effect, reactive, effectScope } = VueReactivity; // 我们reactive他支持一个对象类型
+
+		// 声明了响应式的数据 数据在effect中使用 依赖收集的过程。  我们希望能停止收集依赖 
+		// effect.stop() 只能停止某一个effect 
+		const state = reactive({ name: '小头' });
+		let scope = effectScope();
+		// 状态集中管理 ， 全部停止掉
+		// effectScope 需要收集对应effect (依赖收集)
+		scope.run(() => {
+			let runner = effect(() => {
+				console.log(state.name, '1-1');
+			});
+			effect(() => {
+				console.log(state.name, '1-2');
+			});
+			runner.effect.stop();
+			// false 表示执行 scope.stop(); 时不清除内部 effectScope 的 effect
+			const innerScope = effectScope(true);
+			innerScope.run(() => {
+				effect(() => {
+					console.log(state.name, '2-1');
+				})
+			})
+
+
+		})
+		scope.stop();
+		setTimeout(() => {
+			console.log('---------------');
+			state.name = '大头'
+		}, 1000);
+	</script>
+</body>
+
+</html>
