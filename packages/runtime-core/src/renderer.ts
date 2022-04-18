@@ -250,7 +250,11 @@ export function createRenderer(renderOptions) {
   const patchBlockChildren = (n1, n2, parentComponent) => {
     for (let i = 0; i < n2.dynamicChildren.length; i++) {
       // 树的递归比较, 现在是数组的比较
-      patchElement(n1.dynamicChildren[i], n2.dynamicChildren[i], parentComponent)
+      patchElement(
+        n1.dynamicChildren[i],
+        n2.dynamicChildren[i],
+        parentComponent
+      )
     }
   }
 
@@ -291,7 +295,10 @@ export function createRenderer(renderOptions) {
 
   const mountComponent = (vnode, container, anchor, parentComponent) => {
     // 1.创建组件实例
-    let instance = (vnode.component = createComponentInstance(vnode, parentComponent))
+    let instance = (vnode.component = createComponentInstance(
+      vnode,
+      parentComponent
+    ))
     // 2. 赋值给实例
     setupComponent(instance)
     // 3. 创建 effect
@@ -403,6 +410,17 @@ export function createRenderer(renderOptions) {
           processElement(n1, n2, container, anchor, parentComponent)
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(n1, n2, container, anchor, parentComponent)
+        } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          type.process(n1, n2, container, anchor, {
+            mountChildren,
+            patchChildren,
+            move(vnode, container) {
+              hostInsert(
+                vnode.component ? vnode.component.subTree.el : vnode.el,
+                container
+              )
+            }
+          })
         }
         break
     }

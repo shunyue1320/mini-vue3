@@ -20,3 +20,4 @@ export {
 } from './apiLifecycle'
 
 export { provide, inject } from './apiInject'
+export { TeleportImpl as Teleport } from './components/Teleport'

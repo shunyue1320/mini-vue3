@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>teleport</title>
+	<style>
+		#aaa {
+			color: red;
+		}
+		#bbb {
+			color: green;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app"></div>
+
+	<div id="aaa"></div>
+	<div id="bbb"></div>
+	<!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+	<!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+	<script src="./runtime-dom.global.js"></script>
+	<script>
+		let { h, render, Text, ref, reactive, Teleport } = VueRuntimeDOM
+
+		const VueComponent = {
+			setup() {
+				const flag = ref(true);
+				const handleClick = () => {
+					flag.value = false
+				}
+				const mySon = h(Text, 111)
+				return {
+					flag,
+					handleClick,
+					mySon
+				}
+			},
+			render() {
+				return h(
+					'button',
+					{ onClick: this.handleClick },
+					h(Text, '传送'),
+					this.flag ?
+						h(Teleport, { to: '#aaa' }, this.mySon) :
+						h(Teleport, { to: '#bbb' }, this.mySon)
+				)
+			}
+		}
+		render(h(VueComponent), app);
+	</script>
+</body>

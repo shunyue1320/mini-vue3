@@ -1,4 +1,5 @@
 import { isArray, isObject, isString, ShapeFlags } from '@vue/shared'
+import { isTeleport } from './components/Teleport'
 
 export const Text = Symbol('Text')
 
@@ -17,9 +18,11 @@ export function isSameVnode(n1, n2) {
 export function createVnode(type, props, children = null, patchFlag = 0) {
   let shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
+    : isTeleport(type)
+    ? ShapeFlags.TELEPORT
     : isObject(type)
-    ? ShapeFlags.STATEFUL_COMPONENT // 组件标记
-    : 0
+    ? ShapeFlags.STATEFUL_COMPONENT
+    : 0 // 组件标记
 
   // 虚拟dom就是一个vnode对象，方便diff算法。
   const vnode = {
