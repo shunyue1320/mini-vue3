@@ -8,7 +8,7 @@ import { createVnode, isVnode } from './vnode'
 // h('div',null,h('span'))
 // h('div',null,[h('span')])
 
-export function h(type, propsChildren, children) {
+export function h(type, propsChildren?, children?) {
   const l = arguments.length
 
   if (l === 2) {

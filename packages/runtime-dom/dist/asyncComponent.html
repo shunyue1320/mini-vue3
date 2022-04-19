@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>asyncComponent</title>
+</head>
+
+<body>
+	<div id="app"></div>
+	<!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+	<!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+	<script src="./runtime-dom.global.js"></script>
+	<script>
+		let { h, render, defineAsyncComponent } = VueRuntimeDOM
+		// 异步组件就是刚开始渲染一个空组件， 稍后组件加载完毕后渲染一个真的组件
+		// 对象的写法可以提供更丰富的操作  （组件加载失败， loading标识）
+		// 函数写法
+		// 图片懒加载，
+		const My = {
+			render: () => h('h1', 'hello world')
+		}
+		const ErrorComponent = {
+			render: () => h('a', '组件加载错误提示')
+		}
+		const LoadingComponent = {
+			render: () => h('h1', 'loading....')
+		}
+
+		// 1. 
+		// let asyncComponent = defineAsyncComponent(() => {
+		// 	return new Promise((resolve, reject) => {
+		// 		setTimeout(() => {
+		// 			resolve(My);
+		// 		}, 2000)
+		// 	})
+		// })
+
+		// 2. 
+		let asyncComponent = defineAsyncComponent({
+			loader: () => {
+				return new Promise((resolve, reject) => {
+					setTimeout(() => {
+						// reject(My); // 我们正常情况下 加载失败一次之后 应该再次尝试重新加载
+						resolve(My);
+					}, 2000)
+				})
+			},
+			timeout: 3000,
+			delay: 1000, // 给定delay时间后还没出来就要显示 loading 页面
+			loadingComponent: LoadingComponent,
+			errorComponent: ErrorComponent,
+			onError(err, retry, fail) { // 失败的时候重试
+				console.log('加载失败重试')
+				retry();
+				// fail()
+			}
+		})
+
+		render(h(asyncComponent), app)
+	</script>
+</body>
