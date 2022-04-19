@@ -10,7 +10,7 @@ import {
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
-import { createComponentInstance, setupComponent } from './component'
+import { createComponentInstance, setupComponent, renderComponent } from './component'
 import { hasPropsChanged, updateProps } from './componentProps'
 
 export function createRenderer(renderOptions) {
@@ -319,7 +319,7 @@ export function createRenderer(renderOptions) {
         if (bm) {
           invokeArrayFns(bm)
         }
-        const subTree = render.call(instance.proxy, instance.proxy)
+        const subTree = renderComponent(instance)
         patch(null, subTree, container, anchor, instance)
         if (m) {
           invokeArrayFns(m)
@@ -335,7 +335,7 @@ export function createRenderer(renderOptions) {
         if (bu) {
           invokeArrayFns(bu)
         }
-        const subTree = render.call(instance.proxy, instance.proxy)
+        const subTree = renderComponent(instance)
         patch(instance.subTree, subTree, container, anchor, instance)
         instance.subTree = subTree
         if (u) {

@@ -8,7 +8,8 @@ export const setCurrentInstance = instance => (currentInstance = instance)
 export function createComponentInstance(vnode, parent) {
   // 组件的实例
   const instance = {
-    provides: parent ? parent.provides : Object.create(null), // 所有的组件用的都是父亲的provides 
+    ctx: {}, // 实例的上下文
+    provides: parent ? parent.provides : Object.create(null), // 所有的组件用的都是父亲的provides
     parent,
     data: null,
     vnode, // vue2的源码中组件的虚拟节点叫$vnode  渲染的内容叫_vnode
@@ -120,5 +121,15 @@ export function setupComponent(instance) {
 
   if (!instance.render) {
     instance.render = type.render
+  }
+}
+
+export function renderComponent(instance) {
+  let { vnode, render, props } = instance
+
+  if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+    return render.call(instance.proxy, instance.proxy)
+  } else {
+    return vnode.type(props) // 函数式组件
   }
 }

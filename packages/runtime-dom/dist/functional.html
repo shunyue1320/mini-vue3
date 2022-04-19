@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>functional组件</title>
+</head>
+
+<body>
+	<div id="app"></div>
+	<div id="root"></div>
+	<div id="abc"></div>
+	<!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+	<!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+	<script src="./runtime-dom.global.js"></script>
+	<script>
+		let { h, render } = VueRuntimeDOM
+		// 直接返回虚拟点， 只用于接收数据并且渲染
+		let functionalComponent = (props) => { // 就是函数 props 就是用户传递的属性
+			return h('div', props.title)
+		}
+		render(h(functionalComponent, { title: '支持渲染 functional 组件' }), app);
+
+
+	</script>
+</body>

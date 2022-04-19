@@ -1,5 +1,5 @@
 import { reactive } from '@vue/reactivity'
-import { hasOwn } from '@vue/shared'
+import { hasOwn, ShapeFlags } from '@vue/shared'
 
 export function initProps(instance, rawProps) {
   const props = {}
@@ -21,15 +21,20 @@ export function initProps(instance, rawProps) {
   // 这里props不希望在组件内部被更改，但是props得是响应式的，因为后续属性变化了要更新视图， 用的应该是 shallowReactive 浅监听
   instance.props = reactive(props)
   instance.attrs = attrs
+
+  // props是组件中的，如果是函数式组件 应该用attrs作为props
+  if (instance.vnode.shapeFlag & ShapeFlags.FUNCTIONAL_COMPONENT) {
+    instance.props = instance.attrs
+  }
 }
 
-export function hasPropsChanged(prevProps = {},nextProps = {}) {
-  const nextKeys = Object.keys(nextProps);
-  if(nextKeys.length !== Object.keys(prevProps).length){
+export function hasPropsChanged(prevProps = {}, nextProps = {}) {
+  const nextKeys = Object.keys(nextProps)
+  if (nextKeys.length !== Object.keys(prevProps).length) {
     return true
   }
-  for(let i = 0; i < nextKeys.length;i++){
-    const key = nextKeys[i];
+  for (let i = 0; i < nextKeys.length; i++) {
+    const key = nextKeys[i]
     if (prevProps[key] !== nextProps[key]) {
       return true
     }
@@ -37,7 +42,7 @@ export function hasPropsChanged(prevProps = {},nextProps = {}) {
   return false
 }
 
-export function updateProps(prevProps,nextProps){ 
+export function updateProps(prevProps, nextProps) {
   for (const key in nextProps) {
     prevProps[key] = nextProps[key]
   }
