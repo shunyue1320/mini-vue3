@@ -10,8 +10,13 @@ import {
 import { Text, createVnode, isSameVnode, Fragment } from './vnode'
 import { getSequence } from './sequence'
 import { queueJob } from './scheduler'
-import { createComponentInstance, setupComponent, renderComponent } from './component'
+import {
+  createComponentInstance,
+  setupComponent,
+  renderComponent
+} from './component'
 import { hasPropsChanged, updateProps } from './componentProps'
+import { isKeepAlive } from './components/KeepAlive'
 
 export function createRenderer(renderOptions) {
   // 对 dom 节点的增删改查的跨平台 api，可由用户传入 （默认为操作浏览器dom api）
@@ -299,6 +304,18 @@ export function createRenderer(renderOptions) {
       vnode,
       parentComponent
     ))
+
+    if (isKeepAlive(vnode)) {
+      ;(instance.ctx as any).renderer = {
+        // 创建元素
+        createElement: hostCreateElement,
+        // 移动元素
+        move(vnode, container) {
+          hostInsert(vnode.component.subTree.el, container)
+        }
+      }
+    }
+
     // 2. 赋值给实例
     setupComponent(instance)
     // 3. 创建 effect
@@ -309,6 +326,7 @@ export function createRenderer(renderOptions) {
     instance.next = null
     instance.vnode = next
     updateProps(instance.props, next.props)
+    Object.assign(instance.slots, next.children) // 更新插槽
   }
 
   const setupRenderEffect = (instance, container, anchor) => {
@@ -357,12 +375,14 @@ export function createRenderer(renderOptions) {
   const shouldUpdateComponent = (n1, n2) => {
     const { props: prevProps, children: prevChildren } = n1
     const { props: nextProps, children: nextChildren } = n2
-    if (prevProps === nextProps) {
-      return
-    }
+
     if (prevChildren || nextChildren) {
       return true
     }
+    if (prevProps === nextProps) {
+      return false
+    }
+
     return hasPropsChanged(prevProps, nextProps)
   }
 
@@ -379,7 +399,12 @@ export function createRenderer(renderOptions) {
   // 统一处理组件， 里面在区分是普通的还是 函数式组件
   const processComponent = (n1, n2, container, anchor, parentComponent) => {
     if (n1 == null) {
-      mountComponent(n2, container, anchor, parentComponent)
+      // 渲染缓存的 keep_alive 不需要挂载，直接移动
+      if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+        parentComponent.ctx.activate(n2, container, anchor)
+      } else {
+        mountComponent(n2, container, anchor, parentComponent)
+      }
     } else {
       // props 改变组件更新
       updateComponent(n1, n2)
@@ -414,6 +439,7 @@ export function createRenderer(renderOptions) {
           type.process(n1, n2, container, anchor, {
             mountChildren,
             patchChildren,
+            // 拿到缓存在 keep-alive中的 cache 缓存的组件 instance.subTree 中的 el
             move(vnode, container) {
               hostInsert(
                 vnode.component ? vnode.component.subTree.el : vnode.el,

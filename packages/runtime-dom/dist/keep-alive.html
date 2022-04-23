@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>keep-alive</title>
+</head>
+
+<body>
+    <div id="app"></div> 
+    <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+    <!-- <script src="../../../node_modules/@vue/runtime-core/dist//runtime-core.global.js"></script>  -->
+    <script src="./runtime-dom.global.js"></script>
+    <script>
+        let { h, render, KeepAlive, onMounted } = VueRuntimeDOM
+        // LRU算法 缓存最近打开的指定数量页面
+        // component :is=""
+        // 路由切换 router-view，keep-alive如何缓存的？ 缓存的是真实dom
+        const My3 = {
+            setup() {
+                onMounted(() => {
+                    console.log('my3 mounted')
+                })
+            },
+            render: () => {
+                return h('h1', 'my3')
+            }
+        }
+        const My1 = {
+            setup() {
+                onMounted(() => {
+                    console.log('my1 mounted')
+                })
+            },
+            render: () => {
+                return h('h1', 'my1')
+            }
+        }
+        const My2 = {
+            setup() {
+                onMounted(() => {
+                    console.log('my2 mounted')
+                })
+            },
+            render: () => h('h1', 'my2')
+        }
+        render(h(KeepAlive, { max: 1 }, {
+            default: () => h(My1)
+        }), app);
+        setTimeout(() => {
+            render(h(KeepAlive, { max: 1 }, {
+                default: () => h(My2)
+            }), app);
+        }, 1000)
+        setTimeout(() => {
+            render(h(KeepAlive, { max: 1 }, {
+                default: () => h(My3)
+            }), app);
+        }, 2000)
+
+        setTimeout(() => {
+            render(h(KeepAlive, { max: 1 }, {
+                default: () => h(My1)
+            }), app);
+        }, 3000)
+
+        setTimeout(() => {
+            render(h(KeepAlive, { max: 1 }, {
+                default: () => h(My3)
+            }), app);
+        }, 4000)
+        setTimeout(() => {
+            render(h(KeepAlive, { max: 1 }, {
+                default: () => h(My3)
+            }), app);
+        }, 5000)
+        // max = 1 时：1 2 3 1 3
+        // max = 2 时：1 2 3 1
+    </script>
+</body>
